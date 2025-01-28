@@ -53,6 +53,17 @@ class ContactController(
 
     @DeleteMapping("/api/v1/contacts/{id}")
     fun deleteContact(@PathVariable id: Long): ResponseEntity<Unit> {
-        TODO()
+        if (db.findContactById(id) == null) {
+            return ResponseEntity.notFound().build()
+        }
+
+        // Check if the contact is associated with a store
+        val stores = db.findAllStores()
+        if (stores.any { it.contact.id == id }) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
+
+        db.deleteContactById(id)
+        return ResponseEntity.status(204).build()
     }
 }
