@@ -65,12 +65,9 @@ class DatabaseProxy(
 
     fun saveStore(storeDto: StoreDto): StoreDto {
         println(storeDto)
-        // Retrieve the contact entity from the database
-        var contact: ContactEntity =
+        // If the contact doesnt exits, create it in the database
         if (storeDto.contact.id == null || findContactById(storeDto.contact.id) == null) {
             saveContact(storeDto.contact).toEntity()
-        } else {
-            findContactById(storeDto.contact.id)?.toEntity()!!
         }
 
         val store = storeDto.toEntity()
