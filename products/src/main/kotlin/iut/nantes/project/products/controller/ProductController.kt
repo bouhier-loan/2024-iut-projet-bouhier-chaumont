@@ -3,6 +3,7 @@ package iut.nantes.project.products.controller
 import iut.nantes.project.products.dto.ProductDTO
 import iut.nantes.project.products.service.ProductService
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -19,8 +20,13 @@ class ProductController(val productService: ProductService) {
     }
 
     @GetMapping("/api/v1/products")
-    fun getProducts() : ResponseEntity<List<ProductDTO>> {
-        return ResponseEntity.ok(productService.findAll())
+    fun getProducts(@RequestParam familyname : String?,
+                    @RequestParam @Min(1) minprice : Int?,
+                    @RequestParam @Min(1) maxprice : Int?) : ResponseEntity<List<ProductDTO>> {
+        if (minprice != null && maxprice != null) {
+            if(minprice >= maxprice) return ResponseEntity.badRequest().build()
+        }
+        return ResponseEntity.ok(productService.findAll(familyname, minprice, maxprice))
     }
 
     @GetMapping("/api/v1/products/{id}")

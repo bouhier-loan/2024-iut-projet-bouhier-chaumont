@@ -16,7 +16,19 @@ class ProductService(private val repository: IProductRepository, private val fam
         return repository.save(ProductDTO(uuid,productDTO.name,productDTO.description, productDTO.price, family))
     }
 
-    fun findAll() : List<ProductDTO> = repository.findAll()
+    fun findAll(familyName : String?, minPrice: Int?, maxPrice : Int?) : List<ProductDTO> {
+        var products = repository.findAll()
+        if(familyName != null) {
+            products = products.filter { it.family.name == familyName }
+        }
+        if(minPrice != null) {
+            products = products.filter { it.price.amount >= minPrice }
+        }
+        if(maxPrice != null) {
+            products = products.filter { it.price.amount <= maxPrice }
+        }
+        return products
+    }
 
     fun findById(id: UUID) : ProductDTO? = repository.findById(id)
 
