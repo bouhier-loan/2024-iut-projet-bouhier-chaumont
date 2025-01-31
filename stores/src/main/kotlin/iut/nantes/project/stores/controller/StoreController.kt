@@ -1,6 +1,7 @@
 package iut.nantes.project.stores.controller
 
 import iut.nantes.project.stores.dto.ProductDto
+import iut.nantes.project.stores.dto.ProductOverviewDto
 import iut.nantes.project.stores.dto.StoreDto
 import iut.nantes.project.stores.service.DatabaseProxy
 import org.springframework.http.HttpStatus
@@ -62,6 +63,8 @@ class StoreController(
             return ResponseEntity.notFound().build()
         }
 
+        println(quantity)
+
         val withId = db.addProductToStore(id, ProductDto(productId, "", quantity ?: 1))
         return ResponseEntity.status(HttpStatus.CREATED).body(withId)
     }
@@ -71,6 +74,7 @@ class StoreController(
         if (quantity != null && quantity < 0) {
             return ResponseEntity.badRequest().build()
         }
+        println("quantity: $quantity")
         if (db.findStoreById(id) == null) {
             return ResponseEntity.notFound().build()
         }
@@ -99,5 +103,13 @@ class StoreController(
         }
 
         return ResponseEntity.noContent().build()
+    }
+
+    /* ---- */
+
+    @GetMapping("/api/v1/stores/products/{productId}")
+    fun getProductOverview(@PathVariable productId: String): ResponseEntity<ProductOverviewDto> {
+        val result = db.findProductOverview(productId)
+        return ResponseEntity.ok(result)
     }
 }

@@ -1,17 +1,18 @@
 package iut.nantes.project.stores.service
 
-import iut.nantes.project.stores.config.WebClientConfig
 import iut.nantes.project.stores.dto.AddressDto
 import iut.nantes.project.stores.dto.ContactDto
 import iut.nantes.project.stores.dto.ProductDto
+import iut.nantes.project.stores.dto.ProductOverviewDto
 import iut.nantes.project.stores.dto.StoreDto
+import iut.nantes.project.stores.dto.StoreProductOverviewDto
 import iut.nantes.project.stores.model.AddressEntity
 import iut.nantes.project.stores.model.ContactEntity
 import iut.nantes.project.stores.model.ProductEntity
 import iut.nantes.project.stores.model.StoreEntity
 import iut.nantes.project.stores.repository.ContactRepository
+import iut.nantes.project.stores.repository.ProductRepository
 import iut.nantes.project.stores.repository.StoreRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 
@@ -37,6 +38,7 @@ private fun StoreDto.toEntity() : StoreEntity {
 class DatabaseProxy(
     private val contactRepository: ContactRepository,
     private val storeRepository: StoreRepository,
+    private val productRepository: ProductRepository,
     private val webClient: WebClient
 ) {
     fun saveContact(contactDto: ContactDto): ContactDto {
@@ -126,10 +128,10 @@ class DatabaseProxy(
             product.quantity += productDto.quantity
         } else {
             // Check if the product exists
-            webClient.get().uri("api/v1/products/${productDto.id}").retrieve().bodyToMono(ProductDto::class.java).block()
+            val result = webClient.get().uri("api/v1/products/${productDto.id}").retrieve().bodyToMono(ProductDto::class.java).block()
                 ?: throw IllegalArgumentException("Product not found")
 
-            product = ProductEntity(productDto.id, productDto.name, productDto.quantity)
+            product = ProductEntity(productDto.id, result.name, productDto.quantity)
             store.products += product
         }
 
@@ -173,4 +175,20 @@ class DatabaseProxy(
 
         storeRepository.save(store)
     }
+
+    fun findProductOverview(productId: String): ProductOverviewDto {
+        val stores = storeRepository.findAll().filter { it.products.any { it.id == productId } }
+
+        /* Per store quantity */
+        val perStore = stores.map {
+            val product = it.products.find { it.id == productId }!!
+            StoreProductOverviewDto(it.id, product.quantity)
+        }
+
+        /* Total quantity */
+        val totalQuantity = perStore.stream().mapToInt { it.quantity }.sum()
+
+        return ProductOverviewDto(perStore, totalQuantity)
+    }
+
 }
