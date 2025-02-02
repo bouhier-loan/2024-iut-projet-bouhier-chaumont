@@ -44,7 +44,7 @@ class ProxyController(
                 "http://localhost:8082" // Port: 8082
 
             else -> throw ResponseStatusException(HttpStatus.NOT_FOUND)
-        } + request.requestURI
+        } + request.requestURI + if (request.queryString != null) "?${request.queryString}" else ""
 
         val headers = HttpHeaders()
         headers.set("X-User", user)
