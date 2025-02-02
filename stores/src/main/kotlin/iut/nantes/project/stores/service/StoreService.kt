@@ -1,31 +1,18 @@
 package iut.nantes.project.stores.service
 
-import iut.nantes.project.stores.dto.AddressDto
-import iut.nantes.project.stores.dto.ContactDto
 import iut.nantes.project.stores.dto.ProductDto
 import iut.nantes.project.stores.dto.ProductOverviewDto
 import iut.nantes.project.stores.dto.StoreDto
 import iut.nantes.project.stores.dto.StoreProductOverviewDto
-import iut.nantes.project.stores.model.AddressEntity
 import iut.nantes.project.stores.model.ContactEntity
 import iut.nantes.project.stores.model.ProductEntity
 import iut.nantes.project.stores.model.StoreEntity
-import iut.nantes.project.stores.repository.ContactRepository
-import iut.nantes.project.stores.repository.ProductRepository
 import iut.nantes.project.stores.repository.StoreRepository
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 
-private fun ContactEntity.toDto() = ContactDto(id, email, phone, address.toDto())
-private fun AddressEntity.toDto() = AddressDto(street, city, postalCode)
 private fun ProductEntity.toDto() = ProductDto(id, name, quantity)
 private fun StoreEntity.toDto() = StoreDto(id, name, contact.toDto(), products.map { it.toDto() })
-
-private fun ContactDto.toEntity() : ContactEntity {
-    val address = AddressEntity(null, this.address.street, this.address.city, this.address.postalCode)
-    val contact = ContactEntity(id, email, phone, address)
-    return contact
-}
 
 private fun StoreDto.toEntity() : StoreEntity {
     val products = products.map { ProductEntity(it.id, it.name, it.quantity) }
@@ -35,41 +22,15 @@ private fun StoreDto.toEntity() : StoreEntity {
 }
 
 @Service
-class DatabaseProxy(
-    private val contactRepository: ContactRepository,
+class StoreService(
     private val storeRepository: StoreRepository,
-    private val productRepository: ProductRepository,
-    private val webClient: WebClient
+    private val webClient: WebClient,
+    private val contactService: ContactService,
 ) {
-    fun saveContact(contactDto: ContactDto): ContactDto {
-        val contact = contactDto.toEntity()
-        var result = contactRepository.save<ContactEntity>(contact)
-        return result.toDto()
-    }
-
-    fun findContactById(id: Long): ContactDto? {
-        return contactRepository.findById(id).map { it.toDto() }.orElse(null)
-    }
-
-    fun findAllContacts(): List<ContactDto> {
-        return contactRepository.findAll().map { it.toDto() }
-    }
-
-    fun deleteContactById(id: Long) {
-        contactRepository.deleteById(id)
-    }
-
-    fun updateContact(id: Long, contactDto: ContactDto): ContactDto {
-        val contact = contactDto.toEntity()
-        var result = contactRepository.save(contact)
-        return result.toDto()
-    }
-
     fun saveStore(storeDto: StoreDto): StoreDto {
-        println(storeDto)
-        // If the contact doesnt exits, create it in the database
-        if (storeDto.contact.id == null || findContactById(storeDto.contact.id) == null) {
-            saveContact(storeDto.contact).toEntity()
+        // If the contact doesn't exist, create it in the database
+        if (storeDto.contact.id == null || contactService.findContactById(storeDto.contact.id) == null) {
+            contactService.saveContact(storeDto.contact).toEntity()
         }
 
         val store = storeDto.toEntity()
@@ -77,8 +38,7 @@ class DatabaseProxy(
         // We ignore the product list
         store.products = emptyList()
 
-        var result = storeRepository.save<StoreEntity>(store)
-
+        val result = storeRepository.save<StoreEntity>(store)
         return result.toDto()
     }
 
@@ -92,16 +52,16 @@ class DatabaseProxy(
 
     fun modifyStore(id: Long, storeDto: StoreDto): StoreDto {
         // Retrieve the store entity from the database
-        var store: StoreEntity = storeRepository.findById(id).orElse(null)
+        val store: StoreEntity = storeRepository.findById(id).orElse(null)
             ?: throw IllegalArgumentException("Store not found")
 
         // Retrieve the contact entity from the database
-        var contact: ContactEntity =
-        if (storeDto.contact.id == null || findContactById(storeDto.contact.id) == null) {
-            saveContact(storeDto.contact).toEntity()
-        } else {
-            findContactById(storeDto.contact.id)?.toEntity()!!
-        }
+        val contact: ContactEntity =
+            if (storeDto.contact.id == null || contactService.findContactById(storeDto.contact.id) == null) {
+                contactService.saveContact(storeDto.contact).toEntity()
+            } else {
+                contactService.findContactById(storeDto.contact.id)?.toEntity()!!
+            }
 
         store.name = storeDto.name
         store.contact = contact
@@ -119,7 +79,7 @@ class DatabaseProxy(
 
     fun addProductToStore(storeId: Long, productDto: ProductDto): ProductDto {
         // Retrieve the store entity from the database
-        var store: StoreEntity = storeRepository.findById(storeId).orElse(null)
+        val store: StoreEntity = storeRepository.findById(storeId).orElse(null)
             ?: throw IllegalArgumentException("Store not found")
 
         // Check if the product is already in the store, if so, update the quantity
@@ -141,11 +101,11 @@ class DatabaseProxy(
 
     fun removeProductFromStore(storeId: Long, productId: String, quantity: Int): ProductDto {
         // Retrieve the store entity from the database
-        var store: StoreEntity = storeRepository.findById(storeId).orElse(null)
+        val store: StoreEntity = storeRepository.findById(storeId).orElse(null)
             ?: throw IllegalArgumentException("Store not found")
 
         // Check if the product is in the store
-        var product: ProductEntity? = store.products.find { it.id == productId }
+        val product: ProductEntity? = store.products.find { it.id == productId }
         if (product != null) {
             if (product.quantity <= quantity) {
                 store.products -= product
@@ -162,11 +122,11 @@ class DatabaseProxy(
 
     fun deleteProductFromStore(storeId: Long, productId: String) {
         // Retrieve the store entity from the database
-        var store: StoreEntity = storeRepository.findById(storeId).orElse(null)
+        val store: StoreEntity = storeRepository.findById(storeId).orElse(null)
             ?: throw IllegalArgumentException("Store not found")
 
         // Check if the product is in the store
-        var product: ProductEntity? = store.products.find { it.id == productId }
+        val product: ProductEntity? = store.products.find { it.id == productId }
         if (product != null) {
             store.products -= product
         } else {
@@ -190,5 +150,4 @@ class DatabaseProxy(
 
         return ProductOverviewDto(perStore, totalQuantity)
     }
-
 }

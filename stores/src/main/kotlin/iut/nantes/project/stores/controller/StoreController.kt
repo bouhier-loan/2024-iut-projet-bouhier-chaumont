@@ -3,7 +3,8 @@ package iut.nantes.project.stores.controller
 import iut.nantes.project.stores.dto.ProductDto
 import iut.nantes.project.stores.dto.ProductOverviewDto
 import iut.nantes.project.stores.dto.StoreDto
-import iut.nantes.project.stores.service.DatabaseProxy
+import iut.nantes.project.stores.service.StoreService
+import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -17,68 +18,79 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class StoreController(
-    val db: DatabaseProxy
+    val storeService: StoreService
 ) {
     @PostMapping("/api/v1/stores")
-    fun createStore(@RequestBody store: StoreDto): ResponseEntity<StoreDto> {
+    fun createStore(
+        @RequestBody store: StoreDto
+    ): ResponseEntity<StoreDto> {
         store.id = null
-        val withId = db.saveStore(store)
+        val withId = storeService.saveStore(store)
         return ResponseEntity.status(HttpStatus.CREATED).body(withId)
     }
 
     @GetMapping("/api/v1/stores")
     fun getStores(): ResponseEntity<List<StoreDto>> {
-        val result = db.findAllStores().sortedBy { it.name }
+        val result = storeService.findAllStores().sortedBy { it.name }
         return ResponseEntity.ok(result)
     }
 
     @GetMapping("/api/v1/stores/{id}")
-    fun getStore(@PathVariable id: Long): ResponseEntity<StoreDto> {
-        return db.findStoreById(id)?.let {
+    fun getStore(
+        @PathVariable id: Long
+    ): ResponseEntity<StoreDto> {
+        return storeService.findStoreById(id)?.let {
             ResponseEntity.ok(it)
         } ?: ResponseEntity.notFound().build()
     }
 
     @PutMapping("/api/v1/stores/{id}")
-    fun modifyStore(@RequestBody store: StoreDto, @PathVariable id: Long): ResponseEntity<StoreDto> {
-        val withId = db.modifyStore(id, store)
+    fun modifyStore(
+        @RequestBody store: StoreDto,
+        @PathVariable id: Long
+    ): ResponseEntity<StoreDto> {
+        val withId = storeService.modifyStore(id, store)
         return ResponseEntity.ok(withId)
     }
 
     @DeleteMapping("/api/v1/stores/{id}")
-    fun deleteStore(@PathVariable id: Long): ResponseEntity<Unit> {
-        if (db.findStoreById(id) == null) {
+    fun deleteStore(
+        @PathVariable id: Long
+    ): ResponseEntity<Unit> {
+        if (storeService.findStoreById(id) == null) {
             return ResponseEntity.notFound().build()
         }
-        db.deleteStoreById(id)
+        storeService.deleteStoreById(id)
         return ResponseEntity.status(204).build()
     }
 
     @PostMapping("/api/v1/stores/{id}/products/{productId}/add")
-    fun addProductToStore(@PathVariable id: Long, @PathVariable productId: String, @RequestParam quantity: Int?): ResponseEntity<ProductDto> {
-        if (quantity != null && quantity < 0) {
-            return ResponseEntity.badRequest().build()
-        }
-        if (db.findStoreById(id) == null) {
+    fun addProductToStore(
+        @PathVariable id: Long,
+        @PathVariable productId: String,
+        @RequestParam(defaultValue = "1") @Min(1) quantity: Int
+    ): ResponseEntity<ProductDto> {
+        if (storeService.findStoreById(id) == null) {
             return ResponseEntity.notFound().build()
         }
 
-        println(quantity)
-
-        val withId = db.addProductToStore(id, ProductDto(productId, "", quantity ?: 1))
+        val withId = storeService.addProductToStore(id, ProductDto(productId, "", quantity))
         return ResponseEntity.status(HttpStatus.CREATED).body(withId)
     }
 
     @DeleteMapping("/api/v1/stores/{id}/products/{productId}/remove")
-    fun removeProductFromStore(@PathVariable id: Long, @PathVariable productId: String, @RequestParam quantity: Int?): ResponseEntity<ProductDto> {
-        if (quantity != null && quantity < 0) {
-            return ResponseEntity.badRequest().build()
-        }
+    fun removeProductFromStore(
+        @PathVariable id: Long,
+        @PathVariable productId: String,
+        @RequestParam(defaultValue = "1") @Min(1) quantity: Int
+    ): ResponseEntity<ProductDto> {
         println("quantity: $quantity")
-        if (db.findStoreById(id) == null) {
+        if (storeService.findStoreById(id) == null) {
             return ResponseEntity.notFound().build()
         }
-        val withId = db.removeProductFromStore(id, productId, quantity ?: 1)
+        val withId = storeService.removeProductFromStore(id, productId, quantity)
+
+        println(withId)
 
         return when {
             withId.quantity == 0 -> ResponseEntity.status(409).build()
@@ -87,9 +99,12 @@ class StoreController(
     }
 
     @DeleteMapping("/api/v1/stores/{id}/products/")
-    fun deleteProductFromStore(@PathVariable id: Long, @RequestBody products: List<String>): ResponseEntity<Unit> {
+    fun deleteProductFromStore(
+        @PathVariable id: Long,
+        @RequestBody products: List<String>
+    ): ResponseEntity<Unit> {
         // Check if the store exists
-        if (db.findStoreById(id) == null) {
+        if (storeService.findStoreById(id) == null) {
             return ResponseEntity.notFound().build()
         }
 
@@ -99,7 +114,7 @@ class StoreController(
         }
 
         products.forEach { product ->
-            db.deleteProductFromStore(id, product)
+            storeService.deleteProductFromStore(id, product)
         }
 
         return ResponseEntity.noContent().build()
@@ -108,8 +123,10 @@ class StoreController(
     /* ---- */
 
     @GetMapping("/api/v1/stores/products/{productId}")
-    fun getProductOverview(@PathVariable productId: String): ResponseEntity<ProductOverviewDto> {
-        val result = db.findProductOverview(productId)
+    fun getProductOverview(
+        @PathVariable productId: String
+    ): ResponseEntity<ProductOverviewDto> {
+        val result = storeService.findProductOverview(productId)
         return ResponseEntity.ok(result)
     }
 }

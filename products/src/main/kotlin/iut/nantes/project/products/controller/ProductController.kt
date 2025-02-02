@@ -62,5 +62,4 @@ class ProductController(val productService: ProductService) {
             return ResponseEntity.badRequest().build()
         }
     }
-
 }
