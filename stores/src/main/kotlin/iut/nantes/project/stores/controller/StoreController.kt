@@ -4,6 +4,7 @@ import iut.nantes.project.stores.dto.ProductDto
 import iut.nantes.project.stores.dto.ProductOverviewDto
 import iut.nantes.project.stores.dto.StoreDto
 import iut.nantes.project.stores.service.StoreService
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -22,7 +23,7 @@ class StoreController(
 ) {
     @PostMapping("/api/v1/stores")
     fun createStore(
-        @RequestBody store: StoreDto
+        @Valid @RequestBody store: StoreDto
     ): ResponseEntity<StoreDto> {
         store.id = null
         val withId = storeService.saveStore(store)
@@ -46,7 +47,7 @@ class StoreController(
 
     @PutMapping("/api/v1/stores/{id}")
     fun modifyStore(
-        @RequestBody store: StoreDto,
+        @Valid @RequestBody store: StoreDto,
         @PathVariable id: Long
     ): ResponseEntity<StoreDto> {
         val withId = storeService.modifyStore(id, store)
