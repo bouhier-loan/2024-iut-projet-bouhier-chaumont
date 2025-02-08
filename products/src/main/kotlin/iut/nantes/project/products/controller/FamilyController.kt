@@ -2,6 +2,7 @@ package iut.nantes.project.products.controller
 
 import iut.nantes.project.products.dto.FamilyDTO
 import iut.nantes.project.products.service.FamilyService
+import iut.nantes.project.products.service.ProductService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -9,7 +10,7 @@ import java.net.URI
 import java.util.UUID
 
 @RestController
-class FamilyController(private val service: FamilyService) {
+class FamilyController(private val service: FamilyService, private val productService: ProductService) {
 
     @GetMapping("/api/v1/families")
     fun getFamilies() = ResponseEntity.ok(service.findAll())
@@ -58,7 +59,8 @@ class FamilyController(private val service: FamilyService) {
     @DeleteMapping("/api/v1/families/{id}")
     fun deleteFamily(@PathVariable id: String): ResponseEntity<Void> {
         return try {
-            if(service.deleteById(UUID.fromString(id))) ResponseEntity.noContent().build()
+            if(productService.findAllByFamilyId(UUID.fromString(id)).isNotEmpty()) ResponseEntity.status(409).build()
+            else if(service.deleteById(UUID.fromString(id))) ResponseEntity.noContent().build()
             else ResponseEntity.notFound().build()
         } catch (e: IllegalArgumentException) {
             ResponseEntity.badRequest().build()
