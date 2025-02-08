@@ -83,7 +83,6 @@ class FamilyControllerTest {
         }
     }
 
-
     @Test
     fun `GET all families - should return 200`() {
         service.addFamily("Bike", "La famille des vélos")
@@ -197,8 +196,6 @@ class FamilyControllerTest {
             status { isNotFound() }
         }
     }
-
-
 
     private fun family(name: String, description: String) = """
         {
