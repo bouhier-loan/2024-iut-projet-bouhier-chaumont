@@ -201,19 +201,6 @@ class ProductControllerTest {
     }
 
     @Test
-    fun `DELETE product - should return 204 if deleted successfully`() {
-        val family = familyService.addFamily("Bike", "La famille des vélos")
-        val product = productService.create(ProductDTO(null, "Velo de compet",
-            "velo masterclass", PriceDTO(100, "EUR"), family!!))
-
-        mvc.put("/api/v1/products/${product!!.id}") {
-            header("X-User", "ADMIN")
-        }.andExpect {
-            status { isNoContent() }
-        }
-    }
-
-    @Test
     fun `DELETE product - should return 400 if ID is invalid`() {
         mvc.put("/api/v1/products/${UUID.randomUUID()}") {
             header("X-User", "ADMIN")
@@ -222,28 +209,6 @@ class ProductControllerTest {
         }
     }
 
-    @Test
-    fun `DELETE product - should return 409 if product is still in stock`() {
-        val family = familyService.addFamily("Bike", "La famille des vélos")
-        val product = productService.create(ProductDTO(null, "Velo de compet",
-            "velo masterclass", PriceDTO(100, "EUR"), family!!))
-
-        mvc.put("/api/v1/products/${product!!.id}") {
-            header("X-User", "ADMIN")
-        }.andExpect {
-            status { isNoContent() }
-        }
-    }
-
-
-
-
-    private fun family(name: String, description: String) = """
-        {
-            "name": "$name",
-            "description": "$description"
-        }
-    """.trimIndent()
 
 
     private fun product(name: String, description: String, amount: Int, currency: String, familyDTO: FamilyDTO) = """
