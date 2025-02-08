@@ -179,7 +179,9 @@ class FamilyControllerTest {
     @Test
     fun `DELETE family - should return 409 if products are linked`() {
         val family = service.addFamily("Bike", "La famille des vélos")
-        productService.create(ProductDTO(null, "Velo de compet", "velo masterclass", PriceDTO(100, "EUR"), family!!))
+        productService.create(ProductDTO(null, "Velo de compet", "velo masterclass",
+            PriceDTO(100, "EUR"), family!!))
+
 
         mvc.delete("/api/v1/families/${family.id!!}") {
             header("X-User", "ADMIN")
