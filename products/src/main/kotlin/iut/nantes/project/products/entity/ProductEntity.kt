@@ -11,7 +11,7 @@ data class ProductEntity(
     val description: String? = null,
     val amount: Int,
     val currency: String,
-    @ManyToOne(cascade = [CascadeType.ALL])
+    @ManyToOne
     val familyEntity: FamilyEntity
 
 ) {
