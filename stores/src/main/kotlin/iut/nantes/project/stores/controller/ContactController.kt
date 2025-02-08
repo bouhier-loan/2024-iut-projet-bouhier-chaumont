@@ -3,6 +3,7 @@ package iut.nantes.project.stores.controller
 import iut.nantes.project.stores.dto.ContactDto
 import iut.nantes.project.stores.service.ContactService
 import iut.nantes.project.stores.service.StoreService
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -20,7 +21,7 @@ class ContactController(
     val storeService: StoreService
 ) {
     @PostMapping("/api/v1/contacts")
-    fun createContact(@RequestBody contact: ContactDto): ResponseEntity<ContactDto> {
+    fun createContact(@Valid @RequestBody contact: ContactDto): ResponseEntity<ContactDto> {
      val withId = contactService.saveContact(contact)
      return ResponseEntity.status(HttpStatus.CREATED).body(withId)
     }
@@ -45,7 +46,7 @@ class ContactController(
     }
 
     @PutMapping("/api/v1/contacts/{id}")
-    fun updateContact(@RequestBody contact: ContactDto, @PathVariable id: Long): ResponseEntity<ContactDto> {
+    fun updateContact(@Valid @RequestBody contact: ContactDto, @PathVariable id: Long): ResponseEntity<ContactDto> {
         val existingContact = contactService.findContactById(id) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
 
         if (contact.email != existingContact.email && contact.phone != existingContact.phone) {
