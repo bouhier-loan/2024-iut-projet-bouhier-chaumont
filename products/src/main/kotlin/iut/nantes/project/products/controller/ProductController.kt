@@ -54,12 +54,22 @@ class ProductController(val productService: ProductService) {
 
     @DeleteMapping("/api/v1/products/{id}")
     fun deleteProduct(@PathVariable id : String) : ResponseEntity<Void> {
+
+        if(!isValidUUID(id)) return ResponseEntity.badRequest().build()
+        val productId = UUID.fromString(id)
+
         try {
-            val result = productService.delete(UUID.fromString(id))
-            return if(result) ResponseEntity.ok().build()
-            else ResponseEntity.badRequest().build()
-        } catch (ex: IllegalArgumentException) {
+            if(!productService.canDeleteProduct(productId)) return ResponseEntity.status(409).build()
+        } catch (e : IllegalArgumentException) {
             return ResponseEntity.badRequest().build()
         }
+
+        val result = productService.delete(UUID.fromString(id))
+        return if(result) ResponseEntity.ok().build()
+        else ResponseEntity.badRequest().build()
+    }
+
+    fun isValidUUID(id: String): Boolean {
+        return runCatching { UUID.fromString(id) }.isSuccess
     }
 }

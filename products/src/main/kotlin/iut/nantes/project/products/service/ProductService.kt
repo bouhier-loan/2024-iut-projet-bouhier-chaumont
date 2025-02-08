@@ -2,10 +2,12 @@ package iut.nantes.project.products.service
 
 
 import iut.nantes.project.products.dto.ProductDTO
+import iut.nantes.project.products.dto.StoreResponseDTO
 import iut.nantes.project.products.repository.IProductRepository
+import org.springframework.web.reactive.function.client.WebClient
 import java.util.*
 
-class ProductService(private val repository: IProductRepository, private val familyService: FamilyService) {
+class ProductService(private val repository: IProductRepository, private val familyService: FamilyService, private val webClient: WebClient) {
 
     fun create(productDTO: ProductDTO) : ProductDTO? {
         var uuid = UUID.randomUUID()
@@ -49,6 +51,13 @@ class ProductService(private val repository: IProductRepository, private val fam
         findById(id) ?: return false
         repository.deleteById(id)
         return true
+    }
+
+    fun canDeleteProduct(productId: UUID) : Boolean {
+        val result = webClient.get().uri("/api/v1/stores/products/${productId}").retrieve().bodyToMono(StoreResponseDTO::class.java).block()
+            ?: throw IllegalArgumentException("Stores can't be join")
+
+        return result.totalQuantity == 0
     }
 
 }
