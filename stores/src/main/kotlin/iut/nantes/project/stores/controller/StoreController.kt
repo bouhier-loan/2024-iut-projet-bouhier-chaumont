@@ -79,7 +79,7 @@ class StoreController(
         return ResponseEntity.status(HttpStatus.CREATED).body(withId)
     }
 
-    @DeleteMapping("/api/v1/stores/{id}/products/{productId}/remove")
+    @PostMapping("/api/v1/stores/{id}/products/{productId}/remove")
     fun removeProductFromStore(
         @PathVariable id: Long,
         @PathVariable productId: String,
