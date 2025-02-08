@@ -58,7 +58,7 @@ class FamilyController(private val service: FamilyService) {
     @DeleteMapping("/api/v1/families/{id}")
     fun deleteFamily(@PathVariable id: String): ResponseEntity<Void> {
         return try {
-            if(service.deleteById(UUID.fromString(id))) ResponseEntity.ok().build()
+            if(service.deleteById(UUID.fromString(id))) ResponseEntity.noContent().build()
             else ResponseEntity.notFound().build()
         } catch (e: IllegalArgumentException) {
             ResponseEntity.badRequest().build()
